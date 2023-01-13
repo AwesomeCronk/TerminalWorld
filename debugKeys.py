@@ -1,6 +1,6 @@
 # This script just prints what each key is called
 
-import sys, termios, time, tty
+import sys, termios, time
 
 from pynput import keyboard
 
@@ -17,24 +17,22 @@ def _onRelease(key):
         run = False
         return False
 
-
 # Modified version of `enable_echo` found at https://blog.hartwork.org/posts/disabling-terminal-echo-in-python/
 def setEcho(value):
-    fd = sys.stdin.fileno()
-    iflag, oflag, cflag, lflag, ispeed, ospeed, cc = termios.tcgetattr(fd)
+    iflag, oflag, cflag, lflag, ispeed, ospeed, cc = termios.tcgetattr(sys.stdin)
 
     if value: lflag |= termios.ECHO
     else: lflag &= ~termios.ECHO
 
     termios.tcsetattr(
-        fd,
+        sys.stdin,
         termios.TCSANOW,
         [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
     )
 
 def clearStdin():
-    fd = sys.stdin.fileno()
-    termios.tcflush(fd, termios.TCIFLUSH)
+    termios.tcflush(sys.stdin, termios.TCIFLUSH)
+    # sys.stdin.flush()   # Doesn't seem to do anything
 
 
 if __name__ == '__main__':

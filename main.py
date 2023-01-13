@@ -1,8 +1,9 @@
-import os
+import sys, termios
 
+from pynput import keyboard
 import simpleANSI as ansi
 
-import ui
+import ux
 
 
 def setBGColor(r, g, b):
@@ -41,10 +42,34 @@ def drawTile(name, x, y):
 
 # drawTile('grass', 5, 5)
 
-with ui.runKeyListener():
-    mainMenu = ui.menu('Main Menu')
-    mainMenu.addItem(ui.menuItem('newGame', 'New Game', ui.menuItem.TYPE_ACTION, [], None))
-    mainMenu.addItem(ui.menuItem('sound', 'Sound Volume', ui.menuItem.TYPE_VALUE, [], 15))
-    mainMenu.exec()
+# Modified version of `enable_echo` found at https://blog.hartwork.org/posts/disabling-terminal-echo-in-python/
+def setEcho(value):
+    iflag, oflag, cflag, lflag, ispeed, ospeed, cc = termios.tcgetattr(sys.stdin)
 
-print(ansi.graphics.setGraphicsMode(ansi.graphics.normal))
+    if value: lflag |= termios.ECHO
+    else: lflag &= ~termios.ECHO
+
+    termios.tcsetattr(
+        sys.stdin,
+        termios.TCSANOW,
+        [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
+    )
+
+
+if __name__ == '__main__':
+    try:
+        setEcho(False)
+        keyListener = keyboard.Listener(on_press=ux._onKeyPress, on_release=ux._onKeyRelease)
+        keyListener.start()
+
+        mainMenu = ux.menu('Main Menu')
+        mainMenu.addItem(ux.menuItem('newGame', 'New Game', ux.menuItem.TYPE_ACTION, (), None))
+        mainMenu.addItem(ux.menuItem('sound', 'Sound', ux.menuItem.TYPE_BOOL, ('Off', 'On'), 0))
+        mainMenu.addItem(ux.menuItem('volume', 'Sound Volume', ux.menuItem.TYPE_VALUE, (), 15))
+        print(mainMenu.exec())
+
+    finally:
+        keyListener.stop()
+        termios.tcflush(sys.stdin, termios.TCIFLUSH)    # `sys.stdin.flush()` Doesn't seem to do anything
+        setEcho(True)
+        print(ansi.graphics.setGraphicsMode(ansi.graphics.normal))
