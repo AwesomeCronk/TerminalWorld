@@ -3,7 +3,7 @@ import sys, termios
 from pynput import keyboard
 import simpleANSI as ansi
 
-import ux
+import ui
 
 
 def setBGColor(r, g, b):
@@ -42,34 +42,54 @@ def drawTile(name, x, y):
 
 # drawTile('grass', 5, 5)
 
-# Modified version of `enable_echo` found at https://blog.hartwork.org/posts/disabling-terminal-echo-in-python/
-def setEcho(value):
-    iflag, oflag, cflag, lflag, ispeed, ospeed, cc = termios.tcgetattr(sys.stdin)
 
-    if value: lflag |= termios.ECHO
-    else: lflag &= ~termios.ECHO
-
-    termios.tcsetattr(
-        sys.stdin,
-        termios.TCSANOW,
-        [iflag, oflag, cflag, lflag, ispeed, ospeed, cc]
-    )
 
 
 if __name__ == '__main__':
     try:
-        setEcho(False)
-        keyListener = keyboard.Listener(on_press=ux._onKeyPress, on_release=ux._onKeyRelease)
+        ui.setEcho(False)
+        keyListener = keyboard.Listener(on_press=ui._onKeyPress, on_release=ui._onKeyRelease)
         keyListener.start()
 
-        mainMenu = ux.menu('Main Menu')
-        mainMenu.addItem(ux.menuItem('newGame', 'New Game', ux.menuItem.TYPE_ACTION, (), None))
-        mainMenu.addItem(ux.menuItem('sound', 'Sound', ux.menuItem.TYPE_BOOL, ('Off', 'On'), 0))
-        mainMenu.addItem(ux.menuItem('volume', 'Sound Volume', ux.menuItem.TYPE_VALUE, (), 15))
-        print(mainMenu.exec())
+        mainMenu = ui.menu('Main Menu')
+        mainMenu.addItem(
+            ui.actionMenuItem(
+                'newGame',
+                'New Game'
+            )
+        )
+        mainMenu.addItem(
+            ui.boolMenuItem(
+                'sound',
+                'Sound',
+                choices=('Off', 'On'),
+                currentChoice=False
+            )
+        )
+        mainMenu.addItem(
+            ui.valueMenuItem(
+                'volume',
+                'Sound Volume',
+                value=15
+            )
+        )
+        mainMenu.addItem(
+            ui.choiceMenuItem(
+                'gameMode',
+                'Game Mode',
+                choices=('Easy', 'Medium', 'Hard', 'Asian'),
+                currentChoice=0
+            )
+        )
+
+        result = mainMenu.exec()
+
+        ui.clearScreen()
+        ui.homeCursor()
+
+        print('Results:\n{}'.format(result))
 
     finally:
         keyListener.stop()
         termios.tcflush(sys.stdin, termios.TCIFLUSH)    # `sys.stdin.flush()` Doesn't seem to do anything
-        setEcho(True)
-        print(ansi.graphics.setGraphicsMode(ansi.graphics.normal))
+        ui.setEcho(True)
